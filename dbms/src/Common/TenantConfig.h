@@ -43,6 +43,18 @@ public:
                 id = config.getInt("tenant.tenant-id");
             }
         }
+
+        // try loading config from env
+        if (!enabled || id == 0) {
+            const char * tenant_id = getenv("TIFLASH_TENANT_ID");
+            if (tenant_id) {
+                id = atoi(tenant_id);
+                enabled = true;
+            }
+        }
+        if (enabled && (id > UINT16_MAX || id == 0)) {
+            throw Exception("Invalid tenant id: " + std::to_string(id));
+        }
     }
 };
 

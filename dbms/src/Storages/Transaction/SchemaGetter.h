@@ -135,9 +135,9 @@ struct SchemaGetter
     String schema_diff_prefix;
     String dbs;
 
-    const String *real_schema_version_key;
-    const String *real_schema_diff_prefix;
-    const String *real_dbs;
+    const String * real_schema_version_key;
+    const String * real_schema_diff_prefix;
+    const String * real_dbs;
 
     SchemaGetter(pingcap::kv::Cluster * cluster_, UInt64 tso_, const TenantConfig & tenant_config)
         : snap(cluster_, tso_)
