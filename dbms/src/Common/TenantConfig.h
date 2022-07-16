@@ -11,38 +11,39 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
 
 #pragma once
-
-#include <Poco/Logger.h>
 #include <Poco/Util/LayeredConfiguration.h>
-
-#include <Common/TiFlashSecurity.h>
-#include <Common/TenantConfig.h>
-#include <Interpreters/Context.h>
-
 
 namespace DB
 {
 
-class IServer
+struct TenantConfig
 {
+    bool enabled = false;
+    int id = 0;
+
 public:
-    /// Returns the application's configuration.
-    virtual Poco::Util::LayeredConfiguration & config() const = 0;
+    TenantConfig() = default;
 
-    /// Returns the application's logger.
-    virtual Poco::Logger & logger() const = 0;
+    //TenantConfig(const TenantConfig &from) : enabled(from.enabled), id(from.id) {}
 
-    /// Returns global application's context.
-    virtual Context & context() const = 0;
+    TenantConfig(Poco::Util::LayeredConfiguration & config)
+    {
+        if (config.has("tenant"))
+        {
+            if (config.has("tenant.is-tenant"))
+            {
+                enabled = config.getBool("tenant.is-tenant");
+            }
 
-    virtual const TiFlashSecurityConfig & securityConfig() const = 0;
-
-    /// Returns true if shutdown signaled.
-    virtual bool isCancelled() const = 0;
-
-    virtual ~IServer() {}
+            if (config.has("tenant.tenant-id"))
+            {
+                id = config.getInt("tenant.tenant-id");
+            }
+        }
+    }
 };
 
-}
+} // namespace DB

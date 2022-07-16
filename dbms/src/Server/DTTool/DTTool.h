@@ -308,7 +308,9 @@ class ImitativeEnv
 
         raft_config.ignore_databases = {"default", "system"};
         raft_config.engine = TiDB::StorageEngine::DT;
-        global_context->createTMTContext(raft_config, pingcap::ClusterConfig());
+
+        TenantConfig tenant_config;
+        global_context->createTMTContext(raft_config, pingcap::ClusterConfig(), tenant_config);
 
         global_context->setDeltaIndexManager(1024 * 1024 * 100 /*100MB*/);
 
