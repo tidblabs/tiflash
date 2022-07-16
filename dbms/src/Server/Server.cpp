@@ -240,7 +240,7 @@ struct TiFlashProxyConfig
     const String engine_label = "engine-label";
     const String engine_label_value = "tiflash";
 
-    explicit TiFlashProxyConfig(Poco::Util::LayeredConfiguration & config)
+    explicit TiFlashProxyConfig(Poco::Util::LayeredConfiguration & config, const TenantConfig &tenant_config)
     {
         if (!config.has(config_prefix))
             return;
@@ -267,6 +267,11 @@ struct TiFlashProxyConfig
             {
                 val_map.emplace("--" + k, std::move(v));
             }
+            if (tenant_config.enabled) {
+                String tenant_id("tenant-id=");
+                tenant_id.append(std::to_string(tenant_config.id));
+                val_map.emplace("--labels", std::move(tenant_id));
+            }
         }
 
         args.push_back("TiFlash Proxy");
@@ -275,6 +280,7 @@ struct TiFlashProxyConfig
             args.push_back(v.first.data());
             args.push_back(v.second.data());
         }
+
         is_proxy_runnable = true;
     }
 };
@@ -1011,7 +1017,9 @@ int Server::main(const std::vector<std::string> & /*args*/)
 
     TiFlashErrorRegistry::instance(); // This invocation is for initializing
 
-    TiFlashProxyConfig proxy_conf(config());
+    tenant_config = TenantConfig(config());
+
+    TiFlashProxyConfig proxy_conf(config(), tenant_config);
     EngineStoreServerWrap tiflash_instance_wrap{};
     auto helper = GetEngineStoreServerHelper(
         &tiflash_instance_wrap);
@@ -1308,7 +1316,7 @@ int Server::main(const std::vector<std::string> & /*args*/)
     {
         /// create TMTContext
         auto cluster_config = getClusterConfig(security_config, raft_config);
-        global_context->createTMTContext(raft_config, std::move(cluster_config));
+        global_context->createTMTContext(raft_config, std::move(cluster_config), tenant_config);
         global_context->getTMTContext().reloadConfig(config());
     }
 

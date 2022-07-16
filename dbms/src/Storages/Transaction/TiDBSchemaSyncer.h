@@ -16,6 +16,7 @@
 
 #include <Common/Stopwatch.h>
 #include <Common/TiFlashMetrics.h>
+#include <Common/TenantConfig.h>
 #include <Debug/MockSchemaGetter.h>
 #include <Debug/MockSchemaNameMapper.h>
 #include <Storages/Transaction/SchemaBuilder.h>
@@ -52,10 +53,13 @@ struct TiDBSchemaSyncer : public SchemaSyncer
 
     Poco::Logger * log;
 
-    TiDBSchemaSyncer(KVClusterPtr cluster_)
+    TenantConfig tenant_config;
+
+    TiDBSchemaSyncer(KVClusterPtr cluster_, const TenantConfig & tenant_config_)
         : cluster(cluster_)
         , cur_version(0)
         , log(&Poco::Logger::get("SchemaSyncer"))
+        , tenant_config(tenant_config_)
     {}
 
     bool isTooOldSchema(Int64 cur_ver, Int64 new_version) { return cur_ver == 0 || new_version - cur_ver > maxNumberOfDiffs; }
@@ -69,7 +73,7 @@ struct TiDBSchemaSyncer : public SchemaSyncer
         }
         else
         {
-            return Getter(cluster.get(), tso);
+            return Getter(cluster.get(), tso, tenant_config);
         }
     }
 

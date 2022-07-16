@@ -192,3 +192,7 @@
 ## is set to true, all user data in the log will be replaced by ?.
 ## Note that you also need to set security.redact-info-log for tiflash-learner's logging in tiflash-learner.toml.
 # redact_info_log = false
+
+[tenant]
+is-tenant = true
+tenant-id = 1

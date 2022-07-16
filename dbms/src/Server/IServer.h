@@ -18,6 +18,7 @@
 #include <Poco/Util/LayeredConfiguration.h>
 
 #include <Common/TiFlashSecurity.h>
+#include <Common/TenantConfig.h>
 #include <Interpreters/Context.h>
 
 

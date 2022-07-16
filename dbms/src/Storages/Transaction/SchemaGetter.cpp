@@ -25,13 +25,13 @@ namespace ErrorCodes
 extern const int SCHEMA_SYNC_ERROR;
 }
 
-constexpr char schemaVersionKey[] = "SchemaVersionKey";
+const String schemaVersionKey("SchemaVersionKey");
 
-constexpr char schemaDiffPrefix[] = "Diff";
+const String schemaDiffPrefix("Diff");
 
 constexpr char DBPrefix[] = "DB";
 
-constexpr char DBs[] = "DBs";
+const String DBs("DBs");
 
 constexpr char TablePrefix[] = "Table";
 
@@ -175,13 +175,13 @@ void SchemaDiff::deserialize(const String & data)
 
 Int64 SchemaGetter::getVersion()
 {
-    String ver = TxnStructure::Get(snap, schemaVersionKey);
+    String ver = TxnStructure::Get(snap, *real_schema_version_key);
     if (ver == "")
         return 0;
     return std::stoll(ver);
 }
 
-String SchemaGetter::getSchemaDiffKey(Int64 ver) { return std::string(schemaDiffPrefix) + ":" + std::to_string(ver); }
+String SchemaGetter::getSchemaDiffKey(Int64 ver) { return std::string(*real_schema_diff_prefix) + ":" + std::to_string(ver); }
 
 SchemaDiff SchemaGetter::getSchemaDiff(Int64 ver)
 {
@@ -203,7 +203,7 @@ String SchemaGetter::getTableKey(TableID table_id) { return String(TablePrefix) 
 TiDB::DBInfoPtr SchemaGetter::getDatabase(DatabaseID db_id)
 {
     String key = getDBKey(db_id);
-    String json = TxnStructure::HGet(snap, DBs, key);
+    String json = TxnStructure::HGet(snap, *real_dbs, key);
 
     if (json == "")
         return nullptr;
@@ -232,7 +232,7 @@ TiDB::TableInfoPtr SchemaGetter::getTableInfo(DatabaseID db_id, TableID table_id
 std::vector<TiDB::DBInfoPtr> SchemaGetter::listDBs()
 {
     std::vector<TiDB::DBInfoPtr> res;
-    auto pairs = TxnStructure::HGetAll(snap, DBs);
+    auto pairs = TxnStructure::HGetAll(snap, *real_dbs);
     for (auto pair : pairs)
     {
         auto db_info = std::make_shared<TiDB::DBInfo>(pair.second);
@@ -243,7 +243,7 @@ std::vector<TiDB::DBInfoPtr> SchemaGetter::listDBs()
 
 bool SchemaGetter::checkDBExists(const String & key)
 {
-    String value = TxnStructure::HGet(snap, DBs, key);
+    String value = TxnStructure::HGet(snap, *real_dbs, key);
     return value.size() > 0;
 }
 
@@ -272,6 +272,27 @@ std::vector<TiDB::TableInfoPtr> SchemaGetter::listTables(DatabaseID db_id)
         res.push_back(table_info);
     }
     return res;
+}
+
+void SchemaGetter::initTenant(const TenantConfig & config)
+{
+   if (config.enabled) {
+       auto id = std::to_string(config.id);
+       schema_version_key = schemaVersionKey;
+       schema_version_key.append(id);
+       dbs = DBs;
+       dbs.append(id);
+       schema_diff_prefix = schemaDiffPrefix;
+       schema_diff_prefix.append(1, '/');
+       schema_diff_prefix.append(id);
+       real_schema_diff_prefix = &schema_diff_prefix;
+       real_schema_version_key = &schema_version_key;
+       real_dbs = &dbs;
+   } else {
+       real_schema_version_key = &schemaVersionKey;
+       real_schema_diff_prefix = &schemaDiffPrefix;
+       real_dbs = &DBs;
+   }
 }
 
 // end of namespace.

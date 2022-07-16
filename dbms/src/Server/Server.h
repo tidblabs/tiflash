@@ -69,6 +69,7 @@ private:
     std::unique_ptr<Context> global_context;
 
     TiFlashSecurityConfig security_config;
+    TenantConfig tenant_config;
 
     class FlashGrpcServerHolder;
     class TcpHttpServersHolder;

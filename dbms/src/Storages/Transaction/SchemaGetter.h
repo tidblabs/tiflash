@@ -15,6 +15,7 @@
 #pragma once
 
 #include <Storages/Transaction/TiDB.h>
+#include <Common/TenantConfig.h>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -130,10 +131,20 @@ struct SchemaGetter
 
     Poco::Logger * log;
 
-    SchemaGetter(pingcap::kv::Cluster * cluster_, UInt64 tso_)
+    String schema_version_key;
+    String schema_diff_prefix;
+    String dbs;
+
+    const String * real_schema_version_key;
+    const String * real_schema_diff_prefix;
+    const String * real_dbs;
+
+    SchemaGetter(pingcap::kv::Cluster * cluster_, UInt64 tso_, const TenantConfig & tenant_config)
         : snap(cluster_, tso_)
         , log(&Poco::Logger::get("SchemaGetter"))
-    {}
+    {
+        initTenant(tenant_config);
+    }
 
     Int64 getVersion();
 
@@ -154,6 +165,9 @@ struct SchemaGetter
     std::vector<TiDB::DBInfoPtr> listDBs();
 
     std::vector<TiDB::TableInfoPtr> listTables(DatabaseID db_id);
+
+private:
+    void initTenant(const TenantConfig &config);
 };
 
 } // namespace DB
