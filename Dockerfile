@@ -34,7 +34,7 @@ ENV HOME=/root \
 
 ADD . /root/tiflash
 
-RUN cd /root/tiflash && cmake -DCMAKE_BUILD_TYPE=Release . && make tiflash -j8
+RUN cd /root/tiflash && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS='-Wno-deprecated-declarations -stdlib=libc++' . && make tiflash -j4
 
 FROM ubuntu:jammy-20220531
 RUN apt update && apt install -y curl mysql-client && apt-get clean
