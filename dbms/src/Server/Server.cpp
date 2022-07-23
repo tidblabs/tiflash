@@ -1017,7 +1017,11 @@ int Server::main(const std::vector<std::string> & /*args*/)
 
     TiFlashErrorRegistry::instance(); // This invocation is for initializing
 
-    tenant_config = TenantConfig(config());
+    TiFlashRaftConfig raft_config = TiFlashRaftConfig::parseSettings(config(), log);
+    security_config = TiFlashSecurityConfig(config(), log);
+    auto cluster_config = getClusterConfig(security_config, raft_config);
+
+    tenant_config = TenantConfig(config(), raft_config.pd_addrs, cluster_config);
 
     TiFlashProxyConfig proxy_conf(config(), tenant_config);
     EngineStoreServerWrap tiflash_instance_wrap{};
@@ -1118,7 +1122,6 @@ int Server::main(const std::vector<std::string> & /*args*/)
         storage_config.main_capacity_quota, //
         storage_config.latest_data_paths,
         storage_config.latest_capacity_quota);
-    TiFlashRaftConfig raft_config = TiFlashRaftConfig::parseSettings(config(), log);
     global_context->setPathPool( //
         storage_config.main_data_paths, //
         storage_config.latest_data_paths, //
@@ -1139,8 +1142,6 @@ int Server::main(const std::vector<std::string> & /*args*/)
     global_context->setPath(path);
 
     /// ===== Paths related configuration initialized end ===== ///
-
-    security_config = TiFlashSecurityConfig(config(), log);
     Redact::setRedactLog(security_config.redact_info_log);
 
     // Create directories for 'path' and for default database, if not exist.
@@ -1315,7 +1316,6 @@ int Server::main(const std::vector<std::string> & /*args*/)
 
     {
         /// create TMTContext
-        auto cluster_config = getClusterConfig(security_config, raft_config);
         global_context->createTMTContext(raft_config, std::move(cluster_config), tenant_config);
         global_context->getTMTContext().reloadConfig(config());
     }
