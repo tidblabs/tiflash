@@ -30,12 +30,11 @@ ENV HOME=/root \
     TZ=Asia/Shanghai \
     PATH="/opt/cmake/bin:/usr/local/bin/:${PATH}:/usr/local/go/bin:/root/.cargo/bin" \
     CC=clang-13 \
-    CXX=clang++-13 \
-    LD=ld.lld
+    CXX=clang++-13
 
 ADD . /root/tiflash
 
-RUN cd /root/tiflash && cmake -DCMAKE_BUILD_TYPE=Release . && make tiflash -j4
+RUN cd /root/tiflash && cmake -DCMAKE_BUILD_TYPE=Release . && make tiflash -j8
 
 FROM ubuntu:jammy-20220531
 RUN apt update && apt install -y curl mysql-client && apt-get clean
