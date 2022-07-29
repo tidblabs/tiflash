@@ -14,27 +14,26 @@
 //
 
 #pragma once
-#include <Core/Types.h>
-#include <pingcap/Config.h>
-#include <pingcap/pd/IClient.h>
-#include <kvproto/enginepb.pb.h>
 #include <Poco/Util/LayeredConfiguration.h>
 
 namespace DB
 {
+
+class TenantIDProvider {
+public:
+  virtual ~TenantIDProvider() {}
+  virtual int getTenantID(const char * cluster_name) const = 0;
+};
 
 struct TenantConfig
 {
     bool enabled = false;
     int id = 0;
 
-private:
-    void loadTenantIDFromClusterName(const Strings &pd_addrs, const pingcap::ClusterConfig & cluster_config, const char * cluster_name);
-
 public:
     TenantConfig() = default;
 
-    TenantConfig(const Poco::Util::LayeredConfiguration & config, const Strings &pd_addrs, const pingcap::ClusterConfig & cluster_config)
+    TenantConfig(const Poco::Util::LayeredConfiguration & config, const TenantIDProvider & idProvider)
     {
         if (config.has("tenant"))
         {
@@ -61,7 +60,8 @@ public:
         if (!enabled || id == 0) {
           const char *cluster_name = getenv("TIDB_CLUSTER_NAME");
           if (cluster_name) {
-            loadTenantIDFromClusterName(pd_addrs, cluster_config, cluster_name);
+            id = idProvider.getTenantID(cluster_name);
+            enabled = true;
           }
         }
         if (enabled && (id > UINT16_MAX || id == 0)) {

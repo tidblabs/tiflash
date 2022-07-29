@@ -982,6 +982,28 @@ private:
     std::vector<std::unique_ptr<Poco::Net::TCPServer>> servers;
 };
 
+class PDTenantIDProvider : public TenantIDProvider {
+private:
+  const Strings &pd_addrs;
+  const pingcap::ClusterConfig & cluster_config;
+public:
+  PDTenantIDProvider(const Strings &pd_addrs_, const pingcap::ClusterConfig & cluster_config_)
+    : pd_addrs(pd_addrs_), cluster_config(cluster_config_)
+  {
+  }
+
+  virtual ~PDTenantIDProvider()
+  {
+  }
+
+  virtual int getTenantID(const char * cluster_name) const override
+  {
+    auto cluster = std::make_shared<pingcap::kv::Cluster>(pd_addrs, cluster_config);
+    auto client = cluster->pd_client;
+    return client->getTenantID(cluster_name);
+  }
+};
+
 int Server::main(const std::vector<std::string> & /*args*/)
 {
     setThreadName("TiFlashMain");
@@ -1020,8 +1042,9 @@ int Server::main(const std::vector<std::string> & /*args*/)
     TiFlashRaftConfig raft_config = TiFlashRaftConfig::parseSettings(config(), log);
     security_config = TiFlashSecurityConfig(config(), log);
     auto cluster_config = getClusterConfig(security_config, raft_config);
+    PDTenantIDProvider pd_tenant_id_provider(raft_config.pd_addrs, cluster_config);
 
-    tenant_config = TenantConfig(config(), raft_config.pd_addrs, cluster_config);
+    tenant_config = TenantConfig(config(), pd_tenant_id_provider);
 
     TiFlashProxyConfig proxy_conf(config(), tenant_config);
     EngineStoreServerWrap tiflash_instance_wrap{};
