@@ -1046,6 +1046,10 @@ int Server::main(const std::vector<std::string> & /*args*/)
 
     tenant_config = TenantConfig(config(), pd_tenant_id_provider);
 
+    if (tenant_config.enabled) {
+        LOG_FMT_INFO(log, "Multi Tenant Enabled, Tenant ID:{}", tenant_config.id);
+    }
+
     TiFlashProxyConfig proxy_conf(config(), tenant_config);
     EngineStoreServerWrap tiflash_instance_wrap{};
     auto helper = GetEngineStoreServerHelper(
