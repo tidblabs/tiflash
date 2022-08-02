@@ -39,6 +39,7 @@ RUN cd /root/tiflash && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS='-Wno
 FROM ubuntu:jammy-20220531
 ENV HOME=/root \
     TZ=Asia/Shanghai
+    LD_LIBRARY_PATH=/tiflash
 
 COPY --from=builder /root/tiflash/dbms/src/Server/tiflash /tiflash/tiflash
 COPY --from=builder /root/tiflash/contrib/tiflash-proxy/target/release/libtiflash_proxy.so /tiflash/
@@ -46,6 +47,7 @@ COPY --from=builder /lib/llvm-13/lib/libc++.so.1.0 /tiflash/libc++.so.1
 COPY --from=builder /lib/llvm-13/lib/libc++abi.so.1.0 /tiflash/libc++abi.so.1
 COPY --from=builder /lib/llvm-13/lib/libunwind.so.1.0 /tiflash/libunwind.so.1
 
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && chmod +x /tiflash/*.so.1
+RUN apt update && apt install -y curl mysql-client tzdata && apt-get clean && \
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && chmod +x /tiflash/*.so.1
 
 ENTRYPOINT ["/tiflash/tiflash", "server"]
